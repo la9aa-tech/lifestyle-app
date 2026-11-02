@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b6b50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}</style>
+<title>Lifestyle Gym Planner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one phone-width column (max 480px) centred on larger screens, bottom tab bar for Today / Workout / History / Config. */
+:root {
+  --bg: #edf1ef;
+  --surface: #ffffff;
+  --surface-2: #f4f7f5;
+  --ink: #14211c;
+  --muted: #55645e;
+  --line: #d3dcd8;
+  --accent: #1b6b50;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefe6;
+  --amber: #8a5a00;
+  --amber-soft: #f8ebcb;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1411; --surface: #161f1b; --surface-2: #1c2723; --ink: #e5eee9; --muted: #94a59e;
+    --line: #2b3833; --accent: #5bc99a; --accent-ink: #0b1a13; --accent-soft: #1f3a2f;
+    --amber: #e7b84f; --amber-soft: #3a2e12; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1411; --surface: #161f1b; --surface-2: #1c2723; --ink: #e5eee9; --muted: #94a59e;
+  --line: #2b3833; --accent: #5bc99a; --accent-ink: #0b1a13; --accent-soft: #1f3a2f;
+  --amber: #e7b84f; --amber-soft: #3a2e12; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-block: 10px 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.app { max-width: 480px; margin: 0 auto; padding-bottom: 96px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-block: 4px 12px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: 0.08em; text-transform: uppercase; }
+.sample { font-size: 12px; color: var(--amber); background: var(--amber-soft); padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 38px; line-height: 1; margin: 6px 0 4px; letter-spacing: 0.01em; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; margin: 22px 0 8px; color: var(--muted); }
+.lead { color: var(--muted); margin: 0 0 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.num { font-variant-numeric: tabular-nums; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { min-height: 46px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 16px; font-weight: 600; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); width: 100%; font-size: 16px; }
+.btn.quiet { min-height: 38px; font-weight: 500; font-size: 14px; }
+.suggest { border-left: 6px solid var(--accent); }
+.eyebrow { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.big { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; margin: 2px 0 6px; }
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.chip { min-height: 48px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 4px 2px; font-size: 13px; font-weight: 500; line-height: 1.15; position: relative; }
+.chip[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); font-weight: 600; }
+.chip .tag { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+.chip.done .tag { color: var(--accent); }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; background: var(--amber-soft); color: var(--amber); white-space: nowrap; }
+.badge.green { background: var(--accent-soft); color: var(--accent); }
+.badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.ex { display: grid; grid-template-columns: 38px 1fr; gap: 4px 10px; }
+.pos { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1; color: var(--accent); text-align: center; padding-top: 2px; }
+.pos.warm { font-size: 22px; color: var(--muted); }
+.ex-name { font-weight: 600; font-size: 16px; }
+.last { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
+.sets { display: grid; grid-template-columns: 34px 1fr 1fr; gap: 6px 8px; align-items: center; }
+.sets .hd { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.2; }
+.sets input, .sets select { width: 100%; min-width: 0; min-height: 42px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 8px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.sets .n { text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ctl { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+.ctl button { min-height: 38px; min-width: 44px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 500; }
+.ctl button:disabled { opacity: 0.4; cursor: default; }
+.ctl button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.field { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.field select, .addbar select { min-height: 42px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 10px; text-transform: none; letter-spacing: 0; font-size: 15px; color: var(--ink); width: 100%; min-width: 0; }
+.skipped { opacity: 0.65; }
+.sug { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 8px 12px; }
+.addbar { display: flex; gap: 8px; }
+.addbar select { flex: 1; }
+.note { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+.check { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.list { display: flex; flex-direction: column; }
+.item { padding: 11px 0; border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tools select, .tools input[type="search"] { min-height: 42px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 0 10px; min-width: 0; flex: 1 1 130px; color: var(--ink); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 3px; margin-bottom: 12px; }
+.seg button { min-height: 40px; border: 0; border-radius: 7px; background: transparent; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--line); font-weight: 600; }
+details { border-top: 1px solid var(--line); padding: 10px 0; }
+details:first-of-type { border-top: 0; }
+summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; gap: 8px; }
+summary::marker { color: var(--muted); }
+ol.plain { margin: 8px 0 2px; padding-left: 22px; }
+ol.plain li { padding: 2px 0; }
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(16px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px)); z-index: 5; }
+.tabs-in { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.tab { border: 0; background: transparent; min-height: 54px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 12px; color: var(--muted); font-weight: 500; }
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 6; max-width: min(440px, calc(100vw - 32px)); text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .btn, .chip, .tab { transition: background-color 0.15s, border-color 0.15s; } }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.row.sec { margin: 20px 0 8px; }
+.row.sec h2 { margin: 0; }
+.count { font-family: var(--font-body); font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 500; }
+.switch { position: relative; width: 50px; height: 44px; flex: none; }
+.switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.switch span { position: absolute; left: 0; top: 8px; width: 50px; height: 28px; border-radius: 99px; background: var(--line); pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(22px); }
+.switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.parts { display: flex; flex-direction: column; }
+.part { padding: 10px 0; border-top: 1px solid var(--line); }
+.part:first-child { border-top: 0; padding-top: 0; }
+.part.off .sumline { color: var(--muted); }
+.part-body { margin-top: 10px; padding-left: 60px; display: flex; flex-direction: column; gap: 8px; }
+.panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.panel ol.plain { margin-top: 6px; }
+.plain-ul { margin: 8px 0 2px; padding-left: 18px; }
+.plain-ul > li { padding: 3px 0; }
+
+.field input, .field select, .field textarea, .stack textarea { width: 100%; min-height: 42px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 10px; font: inherit; }
+.field textarea, .stack textarea { width: 100%; font-size: 13px; }
+.btn.warn { border-color: var(--amber); color: var(--ink); background: var(--amber-soft); }
+.item.row { align-items: center; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <span class="brand">Lifestyle · Gym</span>
+    <span class="sample">Demo · saved on this device</span>
+  </header>
+  <main id="view"></main>
+</div>
+
+<nav class="tabs" aria-label="Main">
+  <div class="tabs-in">
+    <button class="tab" data-tab="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg>Today</button>
+    <button class="tab" data-tab="workout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/></svg>Workout</button>
+    <button class="tab" data-tab="history"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+    <button class="tab" data-tab="config"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Config</button>
+  </div>
+</nav>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+const SEED_EX = [
+  ["Barbell bench press","Chest","Triceps, front delts","Barbell",1],
+  ["Incline dumbbell press","Chest","Front delts, triceps","Dumbbell",1],
+  ["Overhead press","Shoulders","Triceps, upper chest","Barbell",1],
+  ["Dumbbell shoulder press","Shoulders","Triceps","Dumbbell",1],
+  ["Push-up","Chest","Triceps, core","Bodyweight",1],
+  ["Dips","Chest","Triceps, shoulders","Bodyweight",1],
+  ["Cable fly","Chest","Front delts","Cable",0],
+  ["Lateral raise","Shoulders","Traps","Dumbbell",0],
+  ["Triceps pushdown","Triceps","","Cable",0],
+  ["Overhead triceps extension","Triceps","","Dumbbell",0],
+  ["Pull-up","Back","Biceps, forearms","Bodyweight",1],
+  ["Barbell row","Back","Biceps, rear delts","Barbell",1],
+  ["Lat pulldown","Back","Biceps","Cable",1],
+  ["Seated cable row","Back","Biceps, rear delts","Cable",1],
+  ["Single-arm dumbbell row","Back","Biceps","Dumbbell",1],
+  ["Deadlift","Hamstrings","Glutes, lower back, traps","Barbell",1],
+  ["Face pull","Rear delts","Traps","Cable",0],
+  ["Barbell curl","Biceps","Forearms","Barbell",0],
+  ["Hammer curl","Biceps","Forearms","Dumbbell",0],
+  ["Rear delt fly","Rear delts","Traps","Dumbbell",0],
+  ["Back squat","Quads","Glutes, hamstrings, core","Barbell",1],
+  ["Front squat","Quads","Glutes, core","Barbell",1],
+  ["Romanian deadlift","Hamstrings","Glutes, lower back","Barbell",1],
+  ["Leg press","Quads","Glutes","Machine",1],
+  ["Walking lunge","Quads","Glutes, hamstrings","Dumbbell",1],
+  ["Bulgarian split squat","Quads","Glutes","Dumbbell",1],
+  ["Hip thrust","Glutes","Hamstrings","Barbell",1],
+  ["Leg curl","Hamstrings","Calves","Machine",0],
+  ["Leg extension","Quads","","Machine",0],
+  ["Standing calf raise","Calves","","Machine",0],
+  ["Plank","Core","Shoulders","Bodyweight",0],
+  ["Hanging knee raise","Core","Hip flexors","Bodyweight",0],
+  ["Cable woodchop","Core","Shoulders","Cable",0],
+  ["Farmer's carry","Forearms","Core, traps","Dumbbell",1],
+  ["Kettlebell swing","Glutes","Hamstrings, core","Kettlebell",1],
+  ["Goblet squat","Quads","Glutes, core","Kettlebell",1],
+  ["Dumbbell clean and press","Shoulders","Glutes, quads, core","Dumbbell",1],
+  ["Cat-cow stretch","Spine","Core","Bodyweight",0],
+  ["Hip flexor stretch","Hip flexors","Glutes","Bodyweight",0],
+  ["Thoracic rotation","Upper back","Shoulders","Bodyweight",0],
+  // cardio and sport
+  ["Easy run","Cardiovascular","Legs","Outdoors",0],
+  ["HIIT sprints","Cardiovascular","Legs, core","Outdoors",0],
+  ["Uphill walk","Cardiovascular","Glutes, calves","Treadmill or hills",0],
+  ["Steady bike ride","Cardiovascular","Quads","Bike",0],
+  ["Rowing machine","Cardiovascular","Back, legs","Machine",0],
+  ["Swimming laps","Cardiovascular","Shoulders, back","Pool",0],
+  ["Stair climber","Cardiovascular","Glutes, quads","Machine",0],
+  ["Skipping rope","Cardiovascular","Calves","Rope",0],
+  ["Padel","Cardiovascular","Legs, shoulders","Court",0],
+  ["Football","Cardiovascular","Legs","Pitch",0],
+  // more stretching and mobility
+  ["Doorway chest stretch","Chest","Front delts","Bodyweight",0],
+  ["Hamstring stretch","Hamstrings","Calves","Bodyweight",0],
+  ["Child's pose","Back","Hips, shoulders","Bodyweight",0],
+  ["Pigeon pose","Glutes","Hip rotators","Bodyweight",0],
+  ["Thread the needle","Upper back","Shoulders","Bodyweight",0],
+  ["Shoulder band pass-through","Shoulders","Chest","Band",0],
+  ["Seated glute stretch","Glutes","Lower back","Bodyweight",0],
+  ["90/90 hip switch","Hips","Glutes","Bodyweight",0],
+  ["Ankle rock","Calves","Ankles","Bodyweight",0],
+  // core and stability
+  ["Dead bug","Core","Hip flexors","Bodyweight",0],
+  ["Bird dog","Core","Glutes, lower back","Bodyweight",0],
+  ["Side plank","Core","Obliques, shoulders","Bodyweight",0],
+  // spa and recovery
+  ["Sauna","Recovery","Heat","Spa",0],
+  ["Steam room","Recovery","Heat, humidity","Spa",0],
+  ["Cold plunge","Recovery","Cold","Spa",0],
+  ["Jacuzzi","Recovery","Heat","Spa",0]
+];
+
+const SEED_GRIPS = {
+  "Pull-up": ["Overhand, wide", "Overhand, shoulder width", "Underhand", "Neutral"],
+  "Barbell bench press": ["Standard", "Close", "Wide"],
+  "Overhead press": ["Standard", "Wide"],
+  "Push-up": ["Standard", "Wide", "Close"],
+  "Barbell row": ["Overhand", "Underhand"],
+  "Lat pulldown": ["Wide overhand", "Neutral", "Underhand"],
+  "Seated cable row": ["Neutral bar", "Wide bar", "Underhand bar"],
+  "Single-arm dumbbell row": ["Neutral", "Overhand"],
+  "Deadlift": ["Double overhand", "Mixed", "Hook"],
+  "Barbell curl": ["Shoulder width", "Wide", "Close"],
+  "Hammer curl": ["Neutral", "Rope"],
+  "Triceps pushdown": ["Straight bar", "Rope", "V-bar"]
+};
+
+
+const CARDIO_N = ["Easy run","HIIT sprints","Uphill walk","Steady bike ride","Rowing machine","Swimming laps","Stair climber","Skipping rope","Padel","Football"];
+const STRETCH_N = ["Cat-cow stretch","Hip flexor stretch","Thoracic rotation","Doorway chest stretch","Hamstring stretch","Child's pose","Pigeon pose","Thread the needle","Shoulder band pass-through","Seated glute stretch","90/90 hip switch","Ankle rock","Dead bug","Bird dog","Side plank"];
+const RECOVERY_N = ["Sauna","Steam room","Cold plunge","Jacuzzi"];
+const TYPE_LABEL = { strength: "Strength", cardio: "Cardio", hiit: "HIIT", stretch: "Stretch", recovery: "Recovery" };
+const GROUP_LABEL = { strength: "Strength", cardio: "Cardio", stretch: "Stretch", recovery: "Recovery" };
+// What each exercise type logs. Every field is optional except where you choose otherwise. [key, heading, placeholder, input type]
+const FIELDS = {
+  strength: [["w","Weight (kg)","kg","decimal"], ["r","Reps","reps","numeric"]],
+  cardio:   [["d","Time (min)","min","decimal"], ["k","Distance (km)","km","decimal"], ["i","Intensity 1–10","1–10","numeric"]],
+  hiit:     [["n","Rounds","rounds","numeric"], ["a","Work (s)","work","numeric"], ["b","Rest (s)","rest","numeric"]],
+  stretch:  [["h","Hold (s)","sec","numeric"], ["r","Reps","reps","numeric"], ["s","Side",null,"side"]],
+  recovery: [["d","Time (min)","min","decimal"], ["t","Temp (°C)","°C","decimal"], ["n","Rounds","rounds","numeric"]]
+};
+const SEED_SESSIONS = [
+  { id:"push1", name:"Push 1", cycle:true, ex:["Barbell bench press","Overhead press","Incline dumbbell press","Lateral raise","Triceps pushdown"] },
+  { id:"pull1", name:"Pull 1", cycle:true, ex:["Pull-up","Barbell row","Seated cable row","Face pull","Barbell curl"] },
+  { id:"legs1", name:"Legs 1", cycle:true, ex:["Back squat","Romanian deadlift","Leg press","Leg curl","Standing calf raise"] },
+  { id:"full1", name:"Full Body 1", cycle:true, ex:["Goblet squat","Incline dumbbell press","Seated cable row","Romanian deadlift","Plank"] },
+  { id:"push2", name:"Push 2", cycle:true, ex:["Dumbbell shoulder press","Dips","Push-up","Cable fly","Overhead triceps extension"] },
+  { id:"pull2", name:"Pull 2", cycle:true, ex:["Deadlift","Lat pulldown","Single-arm dumbbell row","Rear delt fly","Hammer curl"] },
+  { id:"legs2", name:"Legs 2", cycle:true, ex:["Front squat","Hip thrust","Bulgarian split squat","Leg extension","Standing calf raise"] },
+  { id:"full2", name:"Full Body 2", cycle:true, ex:["Kettlebell swing","Overhead press","Pull-up","Walking lunge","Farmer's carry"] },
+  // Outside the cycle: the longer Stretch option. The desk-job moves are pinned and never rotate.
+  { id:"mobility", name:"Mobility session", pinned:["Cat-cow stretch","Hip flexor stretch","Thoracic rotation"],
+    ex:["Cat-cow stretch","Hip flexor stretch","Thoracic rotation","Dead bug","Bird dog","Side plank","Hamstring stretch","Child's pose","Pigeon pose"] }
+];
+// Always in the desk-job stretch block, whatever the session.
+const DESK_N = ["Hip flexor stretch", "Thoracic rotation", "Doorway chest stretch"];
+// Sample extras for the stretch block. Tailoring these to your workouts comes later.
+const STRETCH_FOR = {
+  push: ["Doorway chest stretch", "Thoracic rotation", "Shoulder band pass-through"],
+  pull: ["Thread the needle", "Cat-cow stretch", "Doorway chest stretch"],
+  legs: ["Hip flexor stretch", "Hamstring stretch", "90/90 hip switch", "Ankle rock"],
+  full: ["Cat-cow stretch", "Hip flexor stretch", "Thoracic rotation"]
+};
+// Sample cardio rules, to show where suggestions will come from. Real rules need your weekly targets and history.
+const CARDIO_RULES = {
+  push: { ex: "Easy run",    on: true,  why: "Legs are free after a push session" },
+  pull: { ex: "Uphill walk", on: true,  why: "No rowing around a back session" },
+  legs: { ex: "Uphill walk", on: false, why: "Leg day: no hard cardio before or after" },
+  full: { ex: "Uphill walk", on: true,  why: "Weekly uphill walk target: 0 of 2 so far" }
+};
+// Muscles each kind of weights session is meant to cover; used by the add suggestions.
+const TARGETS = { push: ["Chest","Shoulders","Triceps"], pull: ["Back","Biceps","Rear delts"], legs: ["Quads","Hamstrings","Glutes","Calves"], full: ["Chest","Back","Quads","Hamstrings","Shoulders","Core"] };
+const PARTS = ["stretch", "weights", "cardio", "recovery"];
+const PART_LABEL = { stretch: "Stretch", weights: "Weights", cardio: "Cardio", recovery: "Recovery" };
+
+/* ---------- Small helpers ---------- */
+const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const lc = x => String(x).toLowerCase();
+const slug = n => lc(n).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const ord = n => n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th";
+const fmtDate = iso => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+const fmtShort = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+const secs = e => String(e.secondary || "").split(",").map(x => x.trim()).filter(Boolean);
+
+/* ---------- Saved data (on this device) ---------- */
+const KEY = "gym-planner-v1";
+let storageOk = true;
+function typeOfName(n) {
+  return n === "HIIT sprints" ? "hiit" : CARDIO_N.includes(n) ? "cardio" : STRETCH_N.includes(n) ? "stretch" : RECOVERY_N.includes(n) ? "recovery" : "strength";
+}
+function seedDB() {
+  return {
+    v: 1,
+    exercises: SEED_EX.map(e => ({ id: slug(e[0]), name: e[0], muscle: e[1], secondary: e[2], equipment: e[3], compound: !!e[4], type: typeOfName(e[0]), grips: SEED_GRIPS[e[0]] || [], archived: false })),
+    sessions: SEED_SESSIONS.map(s => ({ id: s.id, name: s.name, cycle: !!s.cycle, pinned: (s.pinned || []).map(slug), ex: s.ex.map(slug) })),
+    visits: [], bench: {}, draft: null
+  };
+}
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const d = JSON.parse(raw); if (d && d.v === 1 && Array.isArray(d.exercises) && Array.isArray(d.sessions) && Array.isArray(d.visits)) { d.bench = d.bench || {}; return d; } }
+  } catch (e) { storageOk = false; }
+  return seedDB();
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(DB)); return true; } catch (e) { storageOk = false; return false; }
+}
+let DB = loadDB();
+let EXM = {};
+function indexEx() { EXM = {}; DB.exercises.forEach(e => { EXM[e.id] = e; }); }
+indexEx();
+const X = id => EXM[id];
+const okId = id => !!X(id) && !X(id).archived;
+const grpOf = e => (e.type === "hiit" ? "cardio" : e.type);
+const partOfEx = e => { const g = grpOf(e); return g === "strength" ? "weights" : g; };
+const gid = id => grpOf(X(id));
+const partOf = id => partOfEx(X(id));
+const sessionById = id => DB.sessions.find(s => s.id === id);
+const cycleList = () => DB.sessions.filter(s => s.cycle);
+const stretchKey = s => s.id.replace(/[0-9]/g, "");
+
+/* ---------- Reading history ---------- */
+const filled = (exId, s) => Object.keys(s).filter(k => k !== "s").some(k => String(s[k]).trim() !== "");
+const hasData = it => it.sets.some(s => filled(it.exId, s));
+function entriesFor(exId) {                      // oldest first
+  const out = [];
+  DB.visits.forEach(v => v.items.forEach(it => { if (it.exId === exId && !it.skipped && hasData(it)) out.push({ v, it }); }));
+  return out;
+}
+function benchEntry(exId, es) { const b = DB.bench[exId]; return es.find(x => x.v.id === b) || es[0]; }
+function fmt(exId, it) {
+  const e = X(exId), kind = e ? e.type : "strength", sets = it.sets.filter(s => filled(exId, s));
+  if (!sets.length) return "";
+  const t = v => String(v == null ? "" : v).trim();
+  if (kind === "strength") {
+    const w = sets.map(s => t(s.w)), reps = sets.map(s => t(s.r) || "?"), same = w.every(x => x === w[0]);
+    if (same) return `${sets.length} set${sets.length > 1 ? "s" : ""} · ${reps.join(", ")} reps` + (w[0] ? ` at ${w[0]} kg` : "");
+    return sets.map((s, i) => `${w[i] || "bw"}×${reps[i]}`).join(", ") + " (kg × reps)";
+  }
+  const piece = {
+    cardio: s => [t(s.d) && t(s.d) + " min", t(s.k) && t(s.k) + " km", t(s.i) && "intensity " + t(s.i)],
+    hiit: s => [t(s.n) && t(s.n) + " rounds", t(s.a) && t(s.a) + " s work", t(s.b) && t(s.b) + " s rest"],
+    stretch: s => [t(s.h) && t(s.h) + " s hold", t(s.r) && t(s.r) + " reps", t(s.s) && t(s.s) !== "Both" ? t(s.s) : ""],
+    recovery: s => [t(s.d) && t(s.d) + " min", t(s.t) && t(s.t) + " °C", t(s.n) && t(s.n) + " rounds"]
+  }[kind];
+  return sets.map(s => piece(s).filter(Boolean).join(" · ")).filter(Boolean).join("; ");
+}
+function lastVisitWith(sid) { for (let i = DB.visits.length - 1; i >= 0; i--) if (DB.visits[i].weightsSession === sid) return DB.visits[i]; return null; }
+function suggestedId() {
+  const c = cycleList(); if (!c.length) return null;
+  for (let i = DB.visits.length - 1; i >= 0; i--) { const k = c.findIndex(s => s.id === DB.visits[i].weightsSession); if (k >= 0) return c[(k + 1) % c.length].id; }
+  return c[0].id;
+}
+function orderFor(s) {                           // each time a session is done, its order shifts one place
+  const count = DB.visits.filter(v => v.weightsSession === s.id).length;
+  const pin = (s.pinned || []).filter(okId);
+  const ids = s.ex.filter(id => okId(id) && !pin.includes(id));
+  const len = ids.length, k = len ? count % len : 0;
+  return { pin, count, shift: k, rotated: pin.concat(k ? ids.slice(len - k).concat(ids.slice(0, len - k)) : ids) };
+}
+
+/* ---------- Visit in progress ---------- */
+function freshParts() {
+  const rec = DB.exercises.filter(e => e.type === "recovery" && !e.archived);
+  const sauna = rec.find(e => lc(e.name) === "sauna") || rec[0];
+  return { stretch: { on: true, mode: "desk" }, weights: { on: true, sel: suggestedId() }, cardio: { on: false, ex: slug("Uphill walk"), touched: false }, recovery: { on: true, items: sauna ? [sauna.id] : [] } };
+}
+const state = {
+  parts: freshParts(), work: [], started: false, visitNote: "", open: {}, collapsed: {},
+  mode: "visit", quick: [], quickId: null, quickOpen: false, showLast: false, addType: "weights",
+  histView: "visits", histEx: null, histGrip: "All", muscle: "All", kindF: "All", query: "",
+  editEx: null, editSess: null, confirm: null, backupText: ""
+};
+const view = document.getElementById("view");
+const $ = (s, r) => (r || document).querySelector(s);
+const W = () => (state.mode === "quick" ? state.quick : state.work);
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2800);
+}
+function newItem(exId, part) {
+  const g = (X(exId).grips || []);
+  return { exId, part: part || partOf(exId), grip: g.length ? g[0] : "", skipped: false, swap: false, always: false, swappedFrom: null, note: "", noteOpen: false, sets: [{}] };
+}
+function adviceFor() {
+  const w = state.parts.weights, s = w.on ? sessionById(w.sel) : null;
+  if (!s) return { ex: "Easy run", on: false, why: "No weights today, so cardio is your call" };
+  return CARDIO_RULES[stretchKey(s)] || { ex: "Easy run", on: false, why: "No rule for this session yet" };
+}
+function applyAdvice() {
+  const c = state.parts.cardio; if (c.touched) return;
+  const r = adviceFor(); c.on = r.on; c.ex = slug(r.ex);
+}
+function buildPart(part) {
+  const P = state.parts[part];
+  if (part === "weights") { const s = sessionById(P.sel); return s ? orderFor(s).rotated.map(id => newItem(id, "weights")) : []; }
+  if (part === "stretch") {
+    if (P.mode === "mobility") {
+      const s = sessionById("mobility"); if (!s) return [];
+      const o = orderFor(s);
+      return o.rotated.map(id => { const it = newItem(id, "stretch"); it.always = o.pin.includes(id); return it; });
+    }
+    const w = state.parts.weights, ws = w.on ? sessionById(w.sel) : null;
+    const desk = DESK_N.map(slug).filter(okId);
+    const extras = ws ? (STRETCH_FOR[stretchKey(ws)] || []).map(slug).filter(id => okId(id) && !desk.includes(id)) : [];
+    return desk.concat(extras).map(id => { const it = newItem(id, "stretch"); it.always = desk.includes(id); return it; });
+  }
+  if (part === "cardio") return okId(P.ex) ? [newItem(P.ex, "cardio")] : [];
+  return DB.exercises.filter(e => e.type === "recovery" && !e.archived && P.items.includes(e.id)).map(e => newItem(e.id, "recovery"));
+}
+const partItems = part => (state.parts[part].on ? buildPart(part) : []);
+const sortWork = () => state.work.sort((a, b) => PARTS.indexOf(a.part) - PARTS.indexOf(b.part));
+function buildAll() { state.work = PARTS.flatMap(partItems); }
+function rebuildPart(part) { state.work = state.work.filter(x => x.part !== part).concat(partItems(part)); sortWork(); }
+function weightsChanged() { applyAdvice(); rebuildPart("weights"); rebuildPart("stretch"); rebuildPart("cardio"); }
+function resetVisit() {
+  state.parts = freshParts(); state.started = false; state.visitNote = ""; state.quick = []; state.mode = "visit";
+  state.open = {}; state.collapsed = {}; applyAdvice(); buildAll();
+}
+function moveItem(i, dir) {
+  const L = W(), j = i + dir;
+  if (j < 0 || j >= L.length || L[j].part !== L[i].part) return;
+  const t = L[i]; L[i] = L[j]; L[j] = t;
+}
+function replaceItem(i, k) {
+  const old = W()[i], it = newItem(k, old.part);
+  it.swappedFrom = old.swappedFrom || old.exId; if (it.swappedFrom === it.exId) it.swappedFrom = null;
+  W()[i] = it;
+}
+const inWorkSet = () => new Set(W().map(x => x.exId));
+function persist() { DB.draft = { parts: state.parts, work: state.work, started: state.started, visitNote: state.visitNote }; save(); }
+let pt = null;
+function persistSoon() { clearTimeout(pt); pt = setTimeout(persist, 400); }
+
+function finishVisit() {
+  const quick = state.mode === "quick", L = W(), items = []; let pos = 0;
+  L.forEach(it => {
+    const done = hasData(it);
+    if (!done && !it.skipped) return;
+    const rec = { exId: it.exId, part: it.part, grip: it.grip, skipped: !!it.skipped, swappedFrom: it.swappedFrom || null, note: (it.note || "").trim(), pos: null, sets: it.skipped ? [] : it.sets.filter(s => filled(it.exId, s)) };
+    if (it.part === "weights" && done && !it.skipped) rec.pos = ++pos;
+    items.push(rec);
+  });
+  if (!items.length) return toast("Nothing logged yet. Enter at least one set.");
+  const hasWeights = !quick && items.some(x => x.part === "weights");
+  const v = { id: "v" + Date.now().toString(36), date: new Date().toISOString(), quick,
+    weightsSession: hasWeights ? state.parts.weights.sel : null, stretchMode: state.parts.stretch.mode, items, note: quick ? "" : state.visitNote.trim() };
+  DB.visits.push(v); DB.draft = null;
+  if (!save()) toast("Saved here, but this browser would not store it. Use Copy backup in Config.");
+  else toast("Visit saved.");
+  resetVisit(); go("today");
+}
+
+/* ---------- Suggestions (rule-based for now: they look only at what is in the visit) ---------- */
+function reasonFor(k) {
+  const e = X(k), g = grpOf(e);
+  return [e.muscle, g === "strength" ? (e.compound ? "compound" : "isolation") : lc(GROUP_LABEL[g]), lc(e.equipment)].join(" · ");
+}
+function swapSuggestions(item) {
+  const e = X(item.exId), g = grpOf(e), inW = inWorkSet(), sec = new Set(secs(e));
+  return DB.exercises.filter(c => !c.archived && !inW.has(c.id) && grpOf(c) === g).map(c => {
+    let score = 0;
+    if (c.muscle === e.muscle) score += 3;
+    if (secs(c).some(m => sec.has(m))) score += 1;
+    if (g === "strength" && c.compound === e.compound) score += 2;
+    if (c.equipment !== e.equipment) score += 1;
+    return { c, score };
+  }).filter(x => x.c.muscle === e.muscle || (g === "stretch" && x.score >= 1)).sort((a, b) => b.score - a.score).slice(0, 4).map(x => ({ k: x.c.id, why: reasonFor(x.c.id) }));
+}
+function addSuggestions(type) {
+  const inW = inWorkSet(), free = DB.exercises.filter(e => !e.archived && !inW.has(e.id) && partOfEx(e) === type);
+  if (type !== "weights") {
+    let list = free.filter(e => e.type !== "hiit");
+    if (type === "stretch") { const d = DESK_N.map(slug); list = list.filter(e => d.includes(e.id)).concat(list.filter(e => !d.includes(e.id))); }
+    return list.slice(0, 5).map(e => ({ k: e.id, why: (type === "stretch" && DESK_N.map(slug).includes(e.id) ? "Counters the desk job" : "More " + lc(PART_LABEL[type])) + " · " + lc(e.equipment) }));
+  }
+  const w = state.parts.weights, ws = w.on ? sessionById(w.sel) : null, targets = ws ? TARGETS[stretchKey(ws)] : null;
+  if (!targets) return free.slice(0, 5).map(e => ({ k: e.id, why: reasonFor(e.id) }));
+  const out = [], cov = {}; targets.concat(["Core"]).forEach(m => { cov[m] = 0; });
+  W().filter(x => x.part === "weights" && !x.skipped).forEach(x => {
+    const e = X(x.exId); if (e.muscle in cov) cov[e.muscle] += 1;
+    secs(e).forEach(m => { if (m in cov) cov[m] += 0.5; });
+  });
+  targets.slice().sort((a, b) => cov[a] - cov[b]).slice(0, 3).forEach(m => {
+    const c = free.filter(e => e.muscle === m);
+    c.sort((a, b) => (cov[m] < 1 ? Number(b.compound) - Number(a.compound) : Number(a.compound) - Number(b.compound)));
+    const why = cov[m] === 0 ? "Not worked yet: " + lc(m) : cov[m] < 2 ? "Lightly worked: " + lc(m) : "Extra " + lc(m) + " volume";
+    c.slice(0, 2).forEach(e => out.push({ k: e.id, why: why + " · " + lc(e.equipment) }));
+  });
+  if (!targets.includes("Core") && cov.Core === 0) {
+    const e = free.find(e => e.muscle === "Core");
+    if (e) out.push({ k: e.id, why: "No core work in this session · " + lc(e.equipment) });
+  }
+  return out.slice(0, 5);
+}
+const sugBtn = (k, why, attr, label) => `<button class="sug" ${attr}><span class="grow"><strong>${esc(X(k).name)}</strong><br><span class="muted small">${esc(why)}</span></span><span class="badge green">${label}</span></button>`;
+function kindBadges(exId) {
+  const e = X(exId), g = grpOf(e);
+  if (g === "strength") return e.compound ? '<span class="badge">Compound</span>' : "";
+  return '<span class="badge green">' + (e.type === "hiit" ? "HIIT" : GROUP_LABEL[g]) + "</span>";
+}
+function optsByMuscle(list) {
+  return [...new Set(list.map(e => e.muscle))].map(m => `<optgroup label="${esc(m)}">${list.filter(e => e.muscle === m).map(e => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join("")}</optgroup>`).join("");
+}
+function optsByType(list) {
+  return ["strength", "cardio", "stretch", "recovery"].map(g => {
+    const l = list.filter(e => grpOf(e) === g); if (!l.length) return "";
+    return `<optgroup label="${GROUP_LABEL[g]}">${l.map(e => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join("")}</optgroup>`;
+  }).join("");
+}
+
+/* ---------- Previous visits ---------- */
+function visitLine(it) {
+  const e = X(it.exId) || { name: "Removed exercise", grips: [] };
+  if (it.skipped) return `<li>${esc(e.name)} <span class="badge">Skipped</span></li>`;
+  const sw = it.swappedFrom && X(it.swappedFrom) ? ` <span class="badge">Swapped</span> <span class="muted small">replaced ${esc(X(it.swappedFrom).name)}</span>` : "";
+  const grip = it.grip && (e.grips || []).length > 1 ? " · " + esc(it.grip) : "";
+  return `<li>${esc(e.name)}${sw} <span class="muted small">· ${esc(fmt(it.exId, it))}${grip}${it.pos ? " · done " + ord(it.pos) : ""}</span>${it.note ? `<div class="muted small">Note: ${esc(it.note)}</div>` : ""}</li>`;
+}
+function visitSummary(v) {
+  const by = p => v.items.filter(it => it.part === p), out = [];
+  if (by("stretch").length) out.push("Stretch");
+  if (by("weights").length) out.push(v.weightsSession && sessionById(v.weightsSession) ? sessionById(v.weightsSession).name : "Weights");
+  if (by("cardio").length) out.push(by("cardio").map(it => (X(it.exId) || { name: "Cardio" }).name).join(", "));
+  if (by("recovery").length) out.push("Recovery");
+  return out.join(" · ");
+}
+function visitCard(v, withDelete) {
+  const parts = PARTS.map(p => {
+    const its = v.items.filter(it => it.part === p); if (!its.length) return "";
+    const title = p === "weights" && v.weightsSession && sessionById(v.weightsSession) ? "Weights · " + sessionById(v.weightsSession).name : PART_LABEL[p];
+    return `<li><strong>${esc(title)}</strong><ol class="plain">${its.map(visitLine).join("")}</ol></li>`;
+  }).join("");
+  const del = withDelete ? `<div style="margin-top:8px"><button class="btn quiet" data-cf="del-${esc(v.id)}" data-delvisit="${esc(v.id)}">${state.confirm === "del-" + v.id ? "Tap again to delete" : "Delete visit"}</button></div>` : "";
+  return `<details class="card" style="margin-bottom:8px"><summary><span class="grow">${fmtDate(v.date)}<span class="muted small" style="font-weight:400"> · ${esc(visitSummary(v))}</span></span></summary><ul class="plain-ul">${parts}</ul>${v.note ? `<div class="muted small">Visit note: ${esc(v.note)}</div>` : ""}${del}</details>`;
+}
+function lastResults() {
+  const s = sessionById(state.parts.weights.sel), v = s && lastVisitWith(s.id), lv = DB.visits[DB.visits.length - 1];
+  const a = v
+    ? `<div class="eyebrow">Last ${esc(s.name)} · ${fmtDate(v.date)}</div><ol class="plain">${v.items.filter(it => it.part === "weights").map(visitLine).join("")}</ol>`
+    : `<div class="eyebrow">${s ? esc(s.name) : "Weights"}</div><div class="muted small">Not done yet. Your first visit sets the benchmark.</div>`;
+  const b = lv
+    ? `<div class="eyebrow" style="margin-top:10px">Last visit · ${fmtDate(lv.date)}</div><div class="small">${esc(visitSummary(lv))}</div>${lv.items.some(it => it.swappedFrom) ? `<div class="muted small">Swapped: ${lv.items.filter(it => it.swappedFrom && X(it.swappedFrom)).map(it => esc(X(it.swappedFrom).name) + " → " + esc(X(it.exId).name)).join(", ")}</div>` : ""}`
+    : `<div class="eyebrow" style="margin-top:10px">Last visit</div><div class="muted small">No visits yet.</div>`;
+  return `<div class="panel">${a}${b}</div>`;
+}
+
+/* ---------- Screens ---------- */
+function partRow(part) {
+  const P = state.parts[part], open = !!state.open[part];
+  const ws = sessionById(state.parts.weights.sel);
+  let sum = "", why = "", body = "";
+  if (part === "stretch") {
+    const n = buildPart("stretch").length;
+    sum = P.mode === "desk" ? `Desk-job block · ${n} stretches` : `Mobility session · ${n} exercises`;
+    why = P.mode === "desk" ? "Always on for the desk job" + (state.parts.weights.on && ws ? ", plus sample extras for " + ws.name : "") : "A longer mobility session, with the desk-job moves pinned first";
+    body = `<div class="seg" style="margin:0" role="group" aria-label="Stretch type">
+        <button data-smode="desk" aria-pressed="${P.mode === "desk"}">Desk-job block</button>
+        <button data-smode="mobility" aria-pressed="${P.mode === "mobility"}">Mobility session</button></div>
+      <div class="muted small">${esc(buildPart("stretch").map(it => X(it.exId).name).join(", "))}</div>`;
+  } else if (part === "weights") {
+    if (!ws) { sum = "No weights sessions set up"; why = "Add sessions in Config"; }
+    else {
+      const o = orderFor(ws);
+      sum = `${esc(ws.name)} · ${o.rotated.length} exercises`;
+      why = ws.id === suggestedId() ? "Suggested next in your rotation" : "Your pick. Suggested next is " + esc(sessionById(suggestedId()).name);
+      body = `<div class="chips" role="group" aria-label="Choose a weights session">${cycleList().map(x => {
+        const lv = lastVisitWith(x.id), tag = x.id === suggestedId() ? "suggested" : (lv ? "last " + fmtShort(lv.date) : "not done yet");
+        return `<button class="chip ${lv ? "done" : ""}" data-pick="${esc(x.id)}" aria-pressed="${x.id === P.sel}">${esc(x.name)}<span class="tag">${tag}</span></button>`;
+      }).join("")}</div>
+      <div class="muted small">Order: Push 1, Pull 1, Legs 1, Full Body 1, then the second variant of each. ${esc(ws.name)} has been done ${o.count} time${o.count === 1 ? "" : "s"}, so today's order is shifted ${o.shift} place${o.shift === 1 ? "" : "s"}.</div>`;
+    }
+  } else if (part === "cardio") {
+    const adv = adviceFor();
+    sum = P.on && okId(P.ex) ? esc(X(P.ex).name) : "Off";
+    why = "Sample rule: " + adv.why;
+    const opts = DB.exercises.filter(e => !e.archived && grpOf(e) === "cardio").map(e => `<option value="${esc(e.id)}" ${e.id === P.ex ? "selected" : ""}>${esc(e.name)}</option>`).join("");
+    body = `<label class="field" for="cardio-ex" style="margin:0">Cardio for this visit<select id="cardio-ex">${opts}</select></label>
+      <div class="muted small">Usually a single session, walking aside. Real suggestions will use your weekly targets and your last and next workouts.</div>`;
+  } else {
+    const names = DB.exercises.filter(e => P.items.includes(e.id)).map(e => e.name);
+    sum = P.on ? esc(names.join(", ") || "Nothing picked") : "Off";
+    why = "Logged, not suggested. Builds your trend data";
+    body = `<div class="chips" role="group" aria-label="Recovery treatments">${DB.exercises.filter(e => e.type === "recovery" && !e.archived).map(e => `<button class="chip" data-rec="${esc(e.id)}" aria-pressed="${P.items.includes(e.id)}">${esc(e.name)}</button>`).join("")}</div>
+      <div class="muted small">Pick what you plan to use. Time, temperature and rounds are logged in the visit.</div>`;
+  }
+  return `<div class="part ${P.on ? "" : "off"}">
+    <div class="row">
+      <label class="switch"><input type="checkbox" role="switch" id="tg-${part}" data-tg="${part}" aria-label="Include ${PART_LABEL[part]} in this visit" ${P.on ? "checked" : ""}><span></span></label>
+      <div class="grow"><strong>${PART_LABEL[part]}</strong><div class="sumline">${sum}</div><div class="muted small">${why}</div></div>
+      <button class="btn quiet" data-open="${part}" aria-expanded="${open}">${open ? "Done" : "Change"}</button>
+    </div>${open ? `<div class="part-body">${body}</div>` : ""}</div>`;
+}
+
+function today() {
+  const nParts = PARTS.filter(p => state.parts[p].on).length, nEx = state.work.length;
+  const quickOpts = optsByType(DB.exercises.filter(e => !e.archived && (grpOf(e) === "cardio" || grpOf(e) === "recovery")));
+  const quickPanel = state.quickOpen ? `<div class="card stack" style="margin-bottom:10px">
+      <strong>Quick log</strong><span class="muted small">A run, a sport or a spa treatment, saved as its own visit.</span>
+      <div class="addbar"><select id="quick-ex" aria-label="What to log">${quickOpts}</select><button class="btn" data-quickgo>Log</button></div></div>` : "";
+  const prev = DB.visits.length ? DB.visits.slice(-5).reverse().map(v => visitCard(v, false)).join("") : `<div class="card muted">No visits yet. Your first visit becomes your benchmark.</div>`;
+  const banner = storageOk ? "" : `<div class="note" style="margin-bottom:10px"><strong>This browser is not saving data.</strong> What you log will be lost when you close the page. Use Copy backup in Config after each visit.</div>`;
+  return `
+    <div class="row"><div class="grow"><h1>Today</h1></div><button class="btn" data-quickopen aria-expanded="${state.quickOpen}">Quick log</button></div>
+    <p class="lead">Your suggested visit. Switch parts on or off, change them, then start.</p>
+    ${banner}${quickPanel}
+    <section class="card suggest stack" aria-label="Suggested visit">
+      <div class="row"><div class="eyebrow grow">Suggested visit</div><button class="btn quiet" data-showlast aria-expanded="${state.showLast}">Last results</button></div>
+      ${state.showLast ? lastResults() : ""}
+      <div class="parts">${PARTS.map(partRow).join("")}</div>
+      <div class="muted small">Once started you can reorder, swap, skip, add or remove exercises. Those changes apply to that visit only.</div>
+      <button class="btn primary" data-start ${nEx ? "" : "disabled"}>${state.started ? "Continue visit" : "Start visit"} · ${nParts} part${nParts === 1 ? "" : "s"}</button>
+    </section>
+    <h2>Previous visits</h2>
+    ${prev}
+    <p class="muted small" style="margin:6px 0 0">${DB.visits.length ? "The last five visits. The full list is under History." : "Visits you finish appear here."}</p>`;
+}
+
+function setsGrid(item, i, kind, e) {
+  const fl = FIELDS[kind];
+  const head = `<span class="hd">${kind === "cardio" || kind === "hiit" ? "Part" : kind === "recovery" ? "Round" : "Set"}</span>` + fl.map(f => `<span class="hd">${f[1]}</span>`).join("");
+  const rows = item.sets.map((r, k) => `<span class="n">${k + 1}</span>` + fl.map(f => {
+    const id = `${f[0]}-${i}-${k}`, label = esc(`${e.name} ${f[1]}, entry ${k + 1}`), v = r[f[0]];
+    if (f[3] === "side") {
+      const cur = v === undefined ? "Both" : v;
+      return `<select id="${id}" data-item="${i}" data-i="${k}" data-f="${f[0]}" aria-label="${label}">${["Both", "Left", "Right"].map(o => `<option ${o === cur ? "selected" : ""}>${o}</option>`).join("")}</select>`;
+    }
+    return `<input id="${id}" data-item="${i}" data-i="${k}" data-f="${f[0]}" inputmode="${f[3]}" placeholder="${f[2]}" aria-label="${label}" value="${esc(v === undefined ? "" : v)}">`;
+  }).join("")).join("");
+  return `<div class="sets" style="grid-template-columns:34px repeat(${fl.length}, minmax(0, 1fr))">${head}${rows}</div>`;
+}
+
+function exCard(item, i, pos, glyph) {
+  const L = W(), e = X(item.exId), g = e.grips || [], kind = e.type;
+  const es = entriesFor(item.exId), last = es.length ? es[es.length - 1] : null, bench = last ? benchEntry(item.exId, es) : null;
+  const canUp = i > 0 && L[i - 1].part === item.part, canDown = i < L.length - 1 && L[i + 1].part === item.part;
+  const gripSel = g.length > 1 ? `<label class="field" for="grip-${i}">Grip<select id="grip-${i}" data-grip="${i}">${g.map(x => `<option ${x === item.grip ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label>` : "";
+  let swapSel = "";
+  if (item.swap) {
+    const inW = inWorkSet(), free = DB.exercises.filter(c => !c.archived && !inW.has(c.id));
+    const sameM = free.filter(c => c.muscle === e.muscle), sameT = free.filter(c => c.muscle !== e.muscle && grpOf(c) === grpOf(e)), rest = free.filter(c => c.muscle !== e.muscle && grpOf(c) !== grpOf(e));
+    const grp = (list, label) => list.length ? `<optgroup label="${esc(label)}">${list.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</optgroup>` : "";
+    const sw = swapSuggestions(item).map(x => sugBtn(x.k, x.why, `data-swapto="${i}:${esc(x.k)}"`, "Swap")).join("");
+    swapSel = `<div class="eyebrow" style="margin-top:10px">Suggested swaps</div><div class="stack" style="margin-top:6px">${sw || '<span class="muted small">No close matches left. Browse below.</span>'}</div><label class="field" for="swap-${i}">Browse all<select id="swap-${i}" data-swap="${i}"><option value="">Choose an exercise</option>${grp(sameM, "Same muscle (" + e.muscle + ")")}${grp(sameT, "Same type")}${grp(rest, "Other exercises")}</select></label>`;
+  }
+  let lastBox;
+  if (!last) lastBox = `<strong>No history yet.</strong> <span class="muted">Today becomes your benchmark.</span>`;
+  else {
+    lastBox = `<strong>Last time:</strong> ${esc(fmt(item.exId, last.it))}${g.length > 1 && last.it.grip ? " · " + esc(last.it.grip) : ""} · ${fmtShort(last.v.date)}`;
+    if (item.part === "weights" && last.it.pos) lastBox += `<br><span class="muted">Done ${ord(last.it.pos)} then${pos ? "; today it is " + ord(pos) : ""}.</span>`;
+    if (g.length > 1 && item.grip && last.it.grip !== item.grip) {
+      const sg = es.slice().reverse().find(x => x.it.grip === item.grip);
+      lastBox += sg ? `<br><span class="muted">Last with ${esc(item.grip)}: ${esc(fmt(item.exId, sg.it))} · ${fmtShort(sg.v.date)}</span>` : `<br><span class="muted">First time with ${esc(item.grip)}.</span>`;
+    }
+    lastBox += `<br><span class="muted">Benchmark: ${bench === last ? "the last entry" : esc(fmt(item.exId, bench.it)) + " · " + fmtShort(bench.v.date)}</span>`;
+  }
+  if (kind === "hiit") lastBox += '<br><span class="muted">Suggested today: 6 rounds · 30 s work, 90 s rest. Sample only; this will use your age, fitness and history.</span>';
+  const body = item.skipped ? `<div class="note">Skipped for this visit.</div>` : `
+        ${gripSel}${swapSel}
+        <div class="last">${lastBox}</div>
+        ${setsGrid(item, i, kind, e)}
+        ${kind === "strength" ? "" : '<div class="muted small" style="margin-top:6px">All fields are optional. Fill in what you have.</div>'}
+        <button class="btn quiet" style="margin-top:8px" data-add="${i}">+ Add ${kind === "cardio" || kind === "hiit" ? "part" : kind === "recovery" ? "round" : "set"}</button>
+        ${item.noteOpen ? `<label class="field" for="note-${i}">Note<input id="note-${i}" data-note="${i}" type="text" placeholder="Optional" value="${esc(item.note)}"></label>` : ""}`;
+  const badges = (item.always ? '<span class="badge">Always on</span>' : "") + (item.skipped ? '<span class="badge">Skipped</span>' : kindBadges(item.exId));
+  return `
+    <article class="card ex ${item.skipped ? "skipped" : ""}">
+      <div class="pos ${pos ? "" : "warm"}" aria-label="${pos ? "Position " + pos : "Not counted in the weights order"}">${pos || glyph}</div>
+      <div>
+        <div class="row"><span class="ex-name grow">${esc(e.name)}</span><span class="badges">${badges}</span></div>
+        <div class="muted small">${esc(e.muscle)}${e.secondary ? " · " + esc(e.secondary) : ""} · ${esc(e.equipment)}</div>
+        <div class="ctl" role="group" aria-label="${esc(e.name)} controls">
+          <button data-up="${i}" aria-label="Move ${esc(e.name)} up" ${canUp ? "" : "disabled"}>↑</button>
+          <button data-down="${i}" aria-label="Move ${esc(e.name)} down" ${canDown ? "" : "disabled"}>↓</button>
+          <button data-swapbtn="${i}" aria-pressed="${item.swap}">Swap</button>
+          <button data-skip="${i}">${item.skipped ? "Undo skip" : "Skip"}</button>
+          <button data-notebtn="${i}" aria-pressed="${item.noteOpen}">Note${item.note ? " ✓" : ""}</button>
+          <button data-remove="${i}">Remove</button>
+        </div>
+        ${body}
+      </div>
+    </article>`;
+}
+
+function workout() {
+  const L = W(), quick = state.mode === "quick";
+  const present = PARTS.filter(p => L.some(x => x.part === p));
+  const ws = sessionById(state.parts.weights.sel);
+  let pc = 0;
+  const glyph = { stretch: "S", cardio: "C", recovery: "R" };
+  const secsHtml = present.map(p => {
+    const items = L.map((it, i) => ({ it, i })).filter(x => x.it.part === p), col = !!state.collapsed[p];
+    const title = PART_LABEL[p] + (p === "weights" && !quick && ws ? " · " + esc(ws.name) : "");
+    const cards = col ? "" : items.map(({ it, i }) => p === "weights" ? exCard(it, i, ++pc, "") : exCard(it, i, 0, glyph[p])).join("");
+    return `<section aria-label="${PART_LABEL[p]}"><div class="row sec"><h2 class="grow">${title} <span class="count muted">${items.length}</span></h2><button class="btn quiet" data-collapse="${p}" aria-expanded="${!col}">${col ? "Show" : "Hide"}</button></div><div class="stack">${cards}</div></section>`;
+  }).join("") || `<div class="card muted">Nothing in this visit yet. Add an exercise below, or switch a part on in Today.</div>`;
+  const inW = inWorkSet();
+  const sugs = addSuggestions(state.addType).map(x => sugBtn(x.k, x.why, `data-addsug="${esc(x.k)}"`, "+ Add")).join("");
+  const free = DB.exercises.filter(e => !e.archived && !inW.has(e.id) && partOfEx(e) === state.addType);
+  const types = PARTS.map(p => `<button class="chip" data-addtype="${p}" aria-pressed="${state.addType === p}">${PART_LABEL[p]}</button>`).join("");
+  const note = quick ? "Quick log: a one-off visit with one part. Nothing here changes your defaults."
+    : "Edits here apply to this visit only. Your default sessions stay the same; change defaults in Config.";
+  return `
+    <h1>${quick ? "Quick log" : "Today's visit"}</h1>
+    <p class="lead">${quick ? "Log what you did." : esc(present.map(p => PART_LABEL[p]).join(" · ") || "No parts selected")}</p>
+    <div class="note" style="margin-bottom:6px">${note}</div>
+    ${secsHtml}
+    <h2>Add an exercise</h2>
+    <div class="chips" role="group" aria-label="What to add">${types}</div>
+    ${sugs ? `<div class="eyebrow" style="margin-top:12px">Suggested</div><div class="stack" style="margin:6px 0 8px">${sugs}</div><p class="muted small" style="margin:0 0 12px">Based on what is already in this visit. Later it will also use your history, niggles and soreness.</p>` : ""}
+    <div class="eyebrow" style="margin-top:12px">Browse all ${lc(PART_LABEL[state.addType])} exercises</div>
+    <div class="addbar" style="margin-top:6px"><select id="add-ex" aria-label="Exercise to add"><option value="">Choose an exercise</option>${optsByMuscle(free)}</select><button class="btn" data-addex>Add</button></div>
+    ${quick ? "" : `<label class="field" for="visit-note" style="margin-top:14px">Visit note<input id="visit-note" type="text" placeholder="Optional" value="${esc(state.visitNote)}"></label>`}
+    <div style="margin-top:14px"><button class="btn quiet" data-reset>Reset to default</button></div>
+    <div style="margin-top:10px"><button class="btn primary" data-finish>Finish visit</button></div>`;
+}
+
+function lastLogged() { for (let i = DB.visits.length - 1; i >= 0; i--) { const it = DB.visits[i].items.find(x => !x.skipped && X(x.exId)); if (it) return it.exId; } return null; }
+function history() {
+  const seg = `<div class="seg" role="group" aria-label="History view">
+    <button data-hv="visits" aria-pressed="${state.histView === "visits"}">By visit</button>
+    <button data-hv="exercises" aria-pressed="${state.histView === "exercises"}">By exercise</button></div>`;
+  let body = "";
+  if (state.histView === "visits") {
+    body = DB.visits.length ? DB.visits.slice().reverse().map(v => visitCard(v, true)).join("") : `<div class="card muted">Nothing logged yet. Finished visits are listed here, newest first.</div>`;
+  } else {
+    const exId = state.histEx && X(state.histEx) ? state.histEx : (lastLogged() || DB.exercises[0].id);
+    const e = X(exId), logged = new Set(); DB.visits.forEach(v => v.items.forEach(it => logged.add(it.exId)));
+    const lo = DB.exercises.filter(x => logged.has(x.id)), no = DB.exercises.filter(x => !logged.has(x.id) && !x.archived);
+    const opt = list => list.map(x => `<option value="${esc(x.id)}" ${x.id === exId ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+    const g = e.grips || [], gripF = g.length > 1 ? state.histGrip : "All";
+    let es = entriesFor(exId); const bench = es.length ? benchEntry(exId, es) : null;
+    if (gripF !== "All") es = es.filter(x => x.it.grip === gripF);
+    const gripChips = g.length > 1 ? `<div class="chips" style="margin-bottom:10px" role="group" aria-label="Filter by grip">${["All"].concat(g).map(x => `<button class="chip" data-hgrip="${esc(x)}" aria-pressed="${x === gripF}">${x === "All" ? "All grips" : esc(x)}</button>`).join("")}</div>` : "";
+    const rows = es.slice().reverse().map(x => `<div class="item row"><div class="grow"><strong class="num">${fmtDate(x.v.date)}</strong><div class="muted small">${esc(fmt(exId, x.it))}${g.length > 1 && x.it.grip ? " · " + esc(x.it.grip) : ""}</div>${x.it.pos ? `<div class="small muted">Done ${ord(x.it.pos)} in that visit</div>` : ""}${x.it.note ? `<div class="small muted">Note: ${esc(x.it.note)}</div>` : ""}</div>${x === bench || (bench && x.v.id === bench.v.id) ? '<span class="badge green">Benchmark</span>' : `<button class="btn quiet" data-bench="${esc(x.v.id)}">Make benchmark</button>`}</div>`).join("");
+    body = `<div class="tools"><select id="hist-ex" aria-label="Choose exercise">${lo.length ? `<optgroup label="Logged">${opt(lo)}</optgroup>` : ""}<optgroup label="Not logged yet">${opt(no)}</optgroup></select></div>
+      ${gripChips}
+      ${rows ? `<div class="card list">${rows}</div><p class="muted small">The benchmark is the entry later sessions compare with. It starts as your first entry; move it to any entry.</p>` : `<div class="card muted">No entries yet${gripF !== "All" ? " for this grip" : ""}. Your first one becomes the benchmark.</div>`}`;
+  }
+  return `<h1>History</h1><p class="lead">Everything you log is kept on this device.</p>${seg}${body}`;
+}
+
+function exForm(id) {
+  const e = id === "new" ? { name: "", muscle: "", secondary: "", equipment: "", type: "strength", compound: false, grips: [] } : X(id);
+  const muscles = [...new Set(DB.exercises.map(x => x.muscle))].sort();
+  return `<div class="item"><div class="stack">
+    <strong>${id === "new" ? "New exercise" : "Edit " + esc(e.name)}</strong>
+    <label class="field" for="ex-name">Name<input id="ex-name" type="text" value="${esc(e.name)}"></label>
+    <label class="field" for="ex-type">Type<select id="ex-type">${["strength", "cardio", "hiit", "stretch", "recovery"].map(t => `<option value="${t}" ${t === e.type ? "selected" : ""}>${TYPE_LABEL[t]}</option>`).join("")}</select></label>
+    <label class="field" for="ex-muscle">Main muscle or area<input id="ex-muscle" type="text" list="muscle-list" value="${esc(e.muscle)}"></label>
+    <datalist id="muscle-list">${muscles.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+    <label class="field" for="ex-second">Other muscles (comma separated)<input id="ex-second" type="text" value="${esc(e.secondary)}"></label>
+    <label class="field" for="ex-equip">Equipment<input id="ex-equip" type="text" value="${esc(e.equipment)}"></label>
+    <label class="check" for="ex-compound"><input type="checkbox" id="ex-compound" ${e.compound ? "checked" : ""}><span>Compound lift (strength only)</span></label>
+    <label class="field" for="ex-grips">Grips (comma separated, first is the default)<input id="ex-grips" type="text" value="${esc((e.grips || []).join(", "))}"></label>
+    <div class="row"><button class="btn primary" data-savex style="flex:1">Save</button><button class="btn" data-cancelx>Cancel</button></div>
+  </div></div>`;
+}
+function saveExercise() {
+  const id = state.editEx, v = n => ($("#" + n).value || "").trim();
+  const name = v("ex-name"); if (!name) return toast("Give the exercise a name.");
+  if (DB.exercises.some(e => lc(e.name) === lc(name) && e.id !== id)) return toast("There is already an exercise with that name.");
+  const type = $("#ex-type").value;
+  const data = { name, muscle: v("ex-muscle") || "Other", secondary: v("ex-second"), equipment: v("ex-equip") || "Bodyweight", type, compound: type === "strength" && $("#ex-compound").checked, grips: v("ex-grips").split(",").map(x => x.trim()).filter(Boolean) };
+  if (id === "new") { let nid = slug(name) || "exercise"; while (EXM[nid]) nid += "-2"; DB.exercises.push(Object.assign({ id: nid, archived: false }, data)); }
+  else Object.assign(EXM[id], data);
+  indexEx(); save(); state.editEx = null; toast("Saved."); route();
+}
+function sessEdit(s) {
+  const free = DB.exercises.filter(e => !e.archived && !s.ex.includes(e.id));
+  const rows = s.ex.map((id, i) => {
+    const e = X(id); if (!e) return "";
+    const pinned = (s.pinned || []).includes(id);
+    return `<div class="item row"><div class="grow"><strong>${esc(e.name)}</strong> ${kindBadges(id)}${pinned ? ' <span class="badge">Always on</span>' : ""}${e.archived ? ' <span class="badge">Archived</span>' : ""}</div>
+      <div class="ctl" style="margin:0"><button data-sup="${esc(s.id)}:${i}" aria-label="Move up" ${i === 0 ? "disabled" : ""}>↑</button><button data-sdown="${esc(s.id)}:${i}" aria-label="Move down" ${i === s.ex.length - 1 ? "disabled" : ""}>↓</button><button data-spin="${esc(s.id)}:${esc(id)}" aria-pressed="${pinned}">Pin</button><button data-srem="${esc(s.id)}:${i}">✕</button></div></div>`;
+  }).join("");
+  return `<div class="card" style="margin-top:8px">${rows || '<div class="muted">No exercises yet.</div>'}
+    <div class="addbar" style="margin-top:10px"><select id="sess-add" aria-label="Exercise to add to ${esc(s.name)}"><option value="">Add an exercise</option>${optsByMuscle(free)}</select><button class="btn" data-sadd="${esc(s.id)}">Add</button></div>
+    <p class="muted small" style="margin:8px 0 0">Pinned exercises stay at the top and never rotate. Changes apply from your next visit; use Reset to default in a visit to apply them to the one in progress.</p></div>`;
+}
+function config() {
+  const muscles = ["All"].concat([...new Set(DB.exercises.map(e => e.muscle))].sort());
+  const q = state.query.trim().toLowerCase();
+  const list = DB.exercises.filter(e => (state.muscle === "All" || e.muscle === state.muscle) && (state.kindF === "All" || GROUP_LABEL[grpOf(e)] === state.kindF) && (!q || lc(e.name).includes(q)));
+  const rows = list.map(e => state.editEx === e.id ? exForm(e.id) : `<div class="item row"><div class="grow"><strong>${esc(e.name)}</strong>${e.archived ? ' <span class="badge">Archived</span>' : ""}<div class="muted small">${esc(e.muscle)}${e.secondary ? " · " + esc(e.secondary) : ""} · ${esc(e.equipment)}</div>${(e.grips || []).length ? '<div class="muted small">Grips: ' + esc(e.grips.join(", ")) + "</div>" : ""}</div>${kindBadges(e.id)}<div class="ctl" style="margin:0"><button data-editx="${esc(e.id)}">Edit</button><button data-archive="${esc(e.id)}">${e.archived ? "Restore" : "Archive"}</button></div></div>`).join("") || '<div class="item muted">No exercises match.</div>';
+  const sess = DB.sessions.map(s => `<div class="item"><div class="row"><div class="grow"><strong>${esc(s.name)}</strong><div class="muted small">${s.ex.length} exercises${s.cycle ? "" : " · outside the cycle"}</div></div><button class="btn quiet" data-editsess="${esc(s.id)}" aria-expanded="${state.editSess === s.id}">${state.editSess === s.id ? "Done" : "Edit"}</button></div>${state.editSess === s.id ? sessEdit(s) : ""}</div>`).join("");
+  const nv = DB.visits.length;
+  return `
+    <h1>Config</h1>
+    <p class="lead">Set up the exercise directory and your sessions.</p>
+    <h2>Sessions (${DB.sessions.length})</h2>
+    <div class="note" style="margin-bottom:8px">Eight weights sessions make up the cycle. The Mobility session is the longer Stretch option. These are your defaults; changes made during a visit never alter them.</div>
+    <div class="card list">${sess}</div>
+    <h2>Exercises (${DB.exercises.length})</h2>
+    <div class="tools">
+      <input id="cfg-q" type="search" placeholder="Search exercises" aria-label="Search exercises" value="${esc(state.query)}">
+      <select id="cfg-k" aria-label="Filter by type">${["All", "Strength", "Cardio", "Stretch", "Recovery"].map(m => `<option ${m === state.kindF ? "selected" : ""}>${m}</option>`).join("")}</select>
+      <select id="cfg-m" aria-label="Filter by muscle">${muscles.map(m => `<option ${m === state.muscle ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>
+    </div>
+    <div class="card list" id="cfg-list">${state.editEx === "new" ? exForm("new") : ""}${rows}</div>
+    ${state.editEx === "new" ? "" : '<div style="margin-top:12px"><button class="btn" data-newx>+ Add exercise</button></div>'}
+    <h2>Your data</h2>
+    <div class="card stack">
+      <div>${nv} visit${nv === 1 ? "" : "s"} saved on this device. ${storageOk ? "This browser is saving your data." : "<strong>This browser is not saving data.</strong>"}</div>
+      <div class="muted small">Your data stays in this browser on this device. Your phone and your computer keep separate logs. Copy a backup now and then and keep it somewhere safe.</div>
+      <button class="btn" data-backup>Copy backup</button>
+      ${state.backupText ? `<label class="field" for="backup-box">Backup text<textarea id="backup-box" rows="4" readonly>${esc(state.backupText)}</textarea></label>` : ""}
+      <label class="field" for="restore-box">Restore from a backup<textarea id="restore-box" rows="3" placeholder="Paste backup text here"></textarea></label>
+      <button class="btn" data-cf="restore" data-restore>${state.confirm === "restore" ? "Tap again to replace everything" : "Restore backup"}</button>
+      <button class="btn warn" data-cf="erase" data-erase>${state.confirm === "erase" ? "Tap again to erase all data" : "Erase all data"}</button>
+    </div>`;
+}
+
+/* ---------- Routing and events ---------- */
+const TABS = ["today", "workout", "history", "config"];
+const SCREENS = { today, workout, history, config };
+let shownTab = null;
+function route() {
+  const h = location.hash.replace("#", "");
+  const tab = TABS.includes(h) ? h : "today";
+  if (tab === "today") state.mode = "visit";
+  const y = window.scrollY;
+  view.innerHTML = SCREENS[tab]();
+  document.querySelectorAll(".tab").forEach(b => {
+    if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  window.scrollTo(0, tab === shownTab ? y : 0);
+  shownTab = tab;
+  persist();
+}
+function go(tab) { if (location.hash === "#" + tab) route(); else location.hash = tab; }
+window.addEventListener("hashchange", route);
+window.addEventListener("pagehide", persist);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") persist(); });
+
+function copyBackup() {
+  const json = JSON.stringify(DB); state.backupText = json;
+  const done = ok => { toast(ok ? "Backup copied. Paste it somewhere safe." : "Could not copy automatically. Select the text shown and copy it."); route(); };
+  try { navigator.clipboard.writeText(json).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+}
+function restoreBackup() {
+  let d; try { d = JSON.parse($("#restore-box").value); } catch (e) { return toast("That is not valid backup text."); }
+  if (!d || d.v !== 1 || !Array.isArray(d.exercises) || !Array.isArray(d.sessions) || !Array.isArray(d.visits)) return toast("That does not look like a backup from this app.");
+  DB = d; DB.bench = DB.bench || {}; DB.draft = null; indexEx(); save(); resetVisit(); state.backupText = ""; toast("Backup restored."); route();
+}
+
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("button"); if (!t || t.disabled) return;
+  const d = t.dataset;
+  if (state.confirm && state.confirm !== d.cf) state.confirm = null;
+  if (d.cf && state.confirm !== d.cf) { state.confirm = d.cf; return route(); }
+  if (d.cf) state.confirm = null;
+  if (d.tab) return go(d.tab);
+  if (d.open) { state.open[d.open] = !state.open[d.open]; return route(); }
+  if (d.pick !== undefined) { state.parts.weights.sel = d.pick; weightsChanged(); return route(); }
+  if (d.smode) { state.parts.stretch.mode = d.smode; rebuildPart("stretch"); return route(); }
+  if (d.rec) {
+    const it = state.parts.recovery.items, k = it.indexOf(d.rec);
+    if (k >= 0) it.splice(k, 1); else it.push(d.rec);
+    rebuildPart("recovery"); return route();
+  }
+  if (d.showlast !== undefined) { state.showLast = !state.showLast; return route(); }
+  if (d.quickopen !== undefined) { state.quickOpen = !state.quickOpen; return route(); }
+  if (d.quickgo !== undefined) {
+    const v = $("#quick-ex").value; if (!v) return;
+    state.mode = "quick"; state.quickId = v; state.quick = [newItem(v)]; state.quickOpen = false;
+    return go("workout");
+  }
+  if (d.start !== undefined) { state.started = true; state.mode = "visit"; return go("workout"); }
+  if (d.collapse) { state.collapsed[d.collapse] = !state.collapsed[d.collapse]; return route(); }
+  if (d.addtype) { state.addType = d.addtype; return route(); }
+  if (d.add !== undefined) { W()[+d.add].sets.push({}); return route(); }
+  if (d.up !== undefined) { moveItem(+d.up, -1); return route(); }
+  if (d.down !== undefined) { moveItem(+d.down, 1); return route(); }
+  if (d.swapbtn !== undefined) { const it = W()[+d.swapbtn]; it.swap = !it.swap; return route(); }
+  if (d.skip !== undefined) { const it = W()[+d.skip]; it.skipped = !it.skipped; return route(); }
+  if (d.notebtn !== undefined) { const it = W()[+d.notebtn]; it.noteOpen = !it.noteOpen; return route(); }
+  if (d.remove !== undefined) { W().splice(+d.remove, 1); toast("Removed from this visit only."); return route(); }
+  if (d.swapto !== undefined) { const k = d.swapto.indexOf(":"); replaceItem(+d.swapto.slice(0, k), d.swapto.slice(k + 1)); toast("Swapped for this visit only."); return route(); }
+  if (d.addsug !== undefined) { W().push(newItem(d.addsug)); if (state.mode !== "quick") sortWork(); toast("Added to this visit only."); return route(); }
+  if (d.addex !== undefined) {
+    const v = $("#add-ex").value; if (v === "") return toast("Choose an exercise first.");
+    W().push(newItem(v)); if (state.mode !== "quick") sortWork();
+    toast("Added to this visit only."); return route();
+  }
+  if (d.reset !== undefined) {
+    if (state.mode === "quick") state.quick = [newItem(state.quickId)]; else { const n = state.visitNote; buildAll(); state.visitNote = n; }
+    toast("Back to the default."); return route();
+  }
+  if (d.finish !== undefined) return finishVisit();
+  if (d.delvisit !== undefined) { DB.visits = DB.visits.filter(v => v.id !== d.delvisit); save(); toast("Visit deleted."); return route(); }
+  if (d.hv) { state.histView = d.hv; return route(); }
+  if (d.hgrip) { state.histGrip = d.hgrip; return route(); }
+  if (d.bench !== undefined) {
+    const exId = $("#hist-ex").value; DB.bench[exId] = d.bench; save(); toast("Benchmark moved."); return route();
+  }
+  if (d.newx !== undefined) { state.editEx = "new"; return route(); }
+  if (d.editx) { state.editEx = d.editx; return route(); }
+  if (d.cancelx !== undefined) { state.editEx = null; return route(); }
+  if (d.savex !== undefined) return saveExercise();
+  if (d.archive) { const e = X(d.archive); e.archived = !e.archived; save(); toast(e.archived ? "Archived. It stays in your history." : "Restored."); return route(); }
+  if (d.editsess) { state.editSess = state.editSess === d.editsess ? null : d.editsess; return route(); }
+  const sp = a => { const k = a.indexOf(":"); return [sessionById(a.slice(0, k)), a.slice(k + 1)]; };
+  if (d.sup !== undefined || d.sdown !== undefined) {
+    const [s, i] = sp(d.sup !== undefined ? d.sup : d.sdown), n = +i, m = d.sup !== undefined ? n - 1 : n + 1;
+    if (m >= 0 && m < s.ex.length) { const x = s.ex[n]; s.ex[n] = s.ex[m]; s.ex[m] = x; save(); }
+    return route();
+  }
+  if (d.spin !== undefined) { const [s, id] = sp(d.spin); s.pinned = s.pinned || []; const k = s.pinned.indexOf(id); if (k >= 0) s.pinned.splice(k, 1); else s.pinned.push(id); save(); return route(); }
+  if (d.srem !== undefined) { const [s, i] = sp(d.srem); const id = s.ex[+i]; s.ex.splice(+i, 1); s.pinned = (s.pinned || []).filter(x => x !== id); save(); return route(); }
+  if (d.sadd !== undefined) { const s = sessionById(d.sadd), v = $("#sess-add").value; if (!v) return toast("Choose an exercise first."); s.ex.push(v); save(); return route(); }
+  if (d.backup !== undefined) return copyBackup();
+  if (d.restore !== undefined) return restoreBackup();
+  if (d.erase !== undefined) { DB = seedDB(); indexEx(); save(); resetVisit(); state.backupText = ""; toast("All data erased."); return route(); }
+});
+document.addEventListener("input", ev => {
+  const t = ev.target;
+  if (t.dataset && t.dataset.f) { W()[+t.dataset.item].sets[+t.dataset.i][t.dataset.f] = t.value; return persistSoon(); }
+  if (t.dataset && t.dataset.note !== undefined) { W()[+t.dataset.note].note = t.value; return persistSoon(); }
+  if (t.id === "visit-note") { state.visitNote = t.value; return persistSoon(); }
+  if (t.id === "cfg-q") { state.query = t.value; const keep = t.selectionStart; route(); const n = $("#cfg-q"); n.focus(); n.setSelectionRange(keep, keep); }
+});
+document.addEventListener("change", ev => {
+  const t = ev.target;
+  if (t.dataset && t.dataset.f) { W()[+t.dataset.item].sets[+t.dataset.i][t.dataset.f] = t.value; return persistSoon(); }
+  if (t.dataset && t.dataset.tg) {
+    const p = t.dataset.tg; state.parts[p].on = t.checked;
+    if (p === "cardio") state.parts.cardio.touched = true;
+    if (p === "weights") weightsChanged(); else rebuildPart(p);
+    return route();
+  }
+  if (t.id === "cardio-ex") { state.parts.cardio.ex = t.value; state.parts.cardio.touched = true; rebuildPart("cardio"); return route(); }
+  if (t.dataset && t.dataset.grip !== undefined) { W()[+t.dataset.grip].grip = t.value; return route(); }
+  if (t.dataset && t.dataset.swap !== undefined) {
+    if (t.value === "") return;
+    replaceItem(+t.dataset.swap, t.value); toast("Swapped for this visit only."); return route();
+  }
+  if (t.id === "cfg-m") { state.muscle = t.value; route(); }
+  if (t.id === "cfg-k") { state.kindF = t.value; route(); }
+  if (t.id === "hist-ex") { state.histEx = t.value; state.histGrip = "All"; route(); }
+});
+
+// Pick up a visit that was in progress when the page was last closed.
+(function restoreDraft() {
+  const d = DB.draft;
+  if (d && d.parts && Array.isArray(d.work) && d.parts.weights && sessionById(d.parts.weights.sel)) {
+    state.parts = d.parts; state.work = d.work.filter(it => X(it.exId)); state.started = !!d.started; state.visitNote = d.visitNote || "";
+  } else { applyAdvice(); buildAll(); }
+})();
+save();
+route();
+
+</script>
+</body>
+</html>
